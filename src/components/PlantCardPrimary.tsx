@@ -3,7 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { RectButton, RectButtonProps } from 'react-native-gesture-handler';
 import { SvgFromUri } from 'react-native-svg';
 
-interface PlantCardPrimaryProps extends RectButtonProps{
+interface PlantProps extends RectButtonProps{
   data: {
     name: string;
     photo: string;
@@ -13,7 +13,7 @@ interface PlantCardPrimaryProps extends RectButtonProps{
 import colors from '../styles/colors';
 import fonts from '../styles/fonts';
 
-export function PlantCardPrimary({data, ...rest}:PlantCardPrimaryProps){
+export function PlantCardPrimary({data, ...rest}:PlantProps){
   return (
     <RectButton
       style={styles.container}
