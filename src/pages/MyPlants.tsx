@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Image, FlatList } from 'react-native';
+import { StyleSheet, View, Text, Image, FlatList, Alert } from 'react-native';
 import { formatDistance } from 'date-fns/esm';
 import { pt } from 'date-fns/locale';
-import { loadPlant, PlantProps } from '../libs/storage';
+import { loadPlant, PlantProps, removePlant } from '../libs/storage';
+
+import { Load } from '../components/Load';
 
 import colors from '../styles/colors';
 import fonts from '../styles/fonts';
@@ -17,10 +19,42 @@ export function MyPlants() {
   const [myPlants, setMyPlants] = useState<PlantProps[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextWaterd, setNextWaterd] = useState<string>();
+  const [isPlantsEmpty, setIsPlantsEmpty] = useState(true);
+
+  function handleRemove(plant:PlantProps) {
+    Alert.alert('Remover', `Deseja remover a ${plant.name}`, [
+      {
+        text: 'Não 🙏',
+        style: 'cancel'
+      },
+      {
+        text: 'Sim 😌',
+        onPress: async() => {
+          try {
+            
+            await removePlant(plant.id);
+
+            setMyPlants((oldData) => 
+              oldData.filter((item) => item.id !== plant.id)
+            );
+
+          }catch(error){
+            Alert.alert('Não foi possivel remover! 😢')
+          }
+        }
+      },
+    ])
+  }
 
   useEffect(() => {
     async function loadStoraged(){
       const plantsStoraged = await loadPlant();
+
+      const plantsIsEmpty = !Object.keys(plantsStoraged).length;
+      if(plantsIsEmpty) {
+        setLoading(false);
+        return;
+      }
 
       const nextTime = formatDistance(
         new Date(plantsStoraged[0].dateTimeNotification).getTime(),
@@ -33,6 +67,8 @@ export function MyPlants() {
       );
 
       setMyPlants(plantsStoraged);
+
+      setIsPlantsEmpty(false);
       
       setLoading(false);
     }
@@ -40,36 +76,52 @@ export function MyPlants() {
     loadStoraged();
   },[])
 
+  if(loading) return <Load />
+
   return(
     <View style={styles.container}>
       <Header />
 
-      <View style={styles.spotlight}>
-        <Image
-          source={waterDrop}
-          height={60}
-          width={60}
-        />
-        <Text style={styles.spotlightText}>
-          {nextWaterd}
-        </Text>
-      </View>
-
-      <View style={styles.plants}>
+      {isPlantsEmpty
+      
+      ? 
         <Text style={styles.plantTitle}>
-          Próximas regradas
+          Você ainda não adicionou nenhuma planta
         </Text>
+      :
+        <>
+          <View style={styles.spotlight}>
+            <Image
+              source={waterDrop}
+              height={60}
+              width={60}
+            />
+            <Text style={styles.spotlightText}>
+              {nextWaterd}
+            </Text>
+          </View>
 
-        <FlatList
-          data={myPlants}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({item}) => (
-            <PlantCardSecondary data={item} />
-          )}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{flex: 1}}
-        />
-      </View>
+          <View style={styles.plants}>
+            <Text style={styles.plantTitle}>
+              Próximas regradas
+            </Text>
+
+            <FlatList
+              data={myPlants}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({item}) => (
+                <PlantCardSecondary
+                  data={item}
+                  handleRemove={() => {handleRemove(item)}}
+                />
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </>
+
+      }
+    
     </View>
   )
 }
